@@ -1,11 +1,10 @@
 package stripe
 
 import (
+	"bytes"
 	"encoding/json"
-	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"strconv"
 	"time"
 )
@@ -73,13 +72,18 @@ func (c *CardError) Details() string {
 	case "processing_error":
 		return "An error occurred while processing the card."
 	}
+	return ""
 }
 
-func apiRequest(method, url string, body io.Reader) (resp interface{}, err error) {
+func apiRequest(method, url string, body string) (resp interface{}, err error) {
 	baseURL := "https://" + HOST + "/" + VERSION + "/"
-	req := http.NewRequest(method, baseURL+url, body)
-	req.setBasicAuth(AUTH_KEY, "")
-	hresp, err = http.DefaultClient.Do(req)
+	rbody := bytes.NewBufferString(body)
+	req, err := http.NewRequest(method, baseURL+url, rbody)
+	if err != nil {
+		return nil, err
+	}
+	req.SetBasicAuth(AUTH_KEY, "")
+	hresp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -105,24 +109,17 @@ func apiRequest(method, url string, body io.Reader) (resp interface{}, err error
 	default:
 		// TODO: Throw a generic error
 	}
-	var resp interface{}
-	err = json.Unmarshal(r.Body, &resp)
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(hresp.Body)
 	hresp.Body.Close()
+	err = json.Unmarshal(buf.Bytes(), &resp)
 	return resp, err
 }
 
 type Charge struct {
-	Amount   int
-	Currency string
-	Card     struct {
-		Country  string
-		CVCCheck string
-		ExpMonth int
-		ExpYear  int
-		LastFour string
-		Object   string
-		Type     string
-	}
+	Amount      int
+	Currency    string
+	Card        *PartialCard
 	Customer    string
 	Description string
 	Created     time.Time
@@ -134,35 +131,37 @@ type Charge struct {
 	Refunded    bool
 }
 
-func jsonToCharge(json map[string]interface{}) (resp *Charge, err error) {
-	created, err := time.Parse("%s", strconv.FormatInt(r["created"], 10))
+func jsonToCharge(json interface{}) (resp *Charge, err error) {
+	r := json.(map[string]interface{})
+	created, err := time.Parse("%s", strconv.FormatInt(r["created"].(int64), 10))
 	if err != nil {
 		// TODO: throw an error
 	}
+	cardVal := r["card"].(map[string]interface{})
 	card := PartialCard{
-		Country:         r["card"]["country"],
-		CVCCheck:        r["card"]["cvc_check"],
-		AddressCheck:    r["card"]["address_line1_check"],
-		AddressZipCheck: r["card"]["address_zip_check"],
-		ExpMonth:        r["card"]["exp_month"],
-		ExpYear:         r["card"]["exp_year"],
-		LastFour:        r["card"]["last4"],
-		Object:          r["card"]["object"],
-		Type:            r["card"]["type"],
+		Country:         cardVal["country"].(string),
+		CVCCheck:        cardVal["cvc_check"].(string),
+		AddressCheck:    cardVal["address_line1_check"].(string),
+		AddressZipCheck: cardVal["address_zip_check"].(string),
+		ExpMonth:        cardVal["exp_month"].(int),
+		ExpYear:         cardVal["exp_year"].(int),
+		LastFour:        cardVal["last4"].(string),
+		Object:          cardVal["object"].(string),
+		Type:            cardVal["type"].(string),
 	}
-	resp := Charge{
-		Amount:      r["amount"],
-		Currency:    r["currency"],
-		Customer:    r["customer"],
-		Description: r["description"],
+	resp = &Charge{
+		Amount:      r["amount"].(int),
+		Currency:    r["currency"].(string),
+		Customer:    r["customer"].(string),
+		Description: r["description"].(string),
 		Created:     created,
-		Fee:         r["fee"],
-		ID:          r["id"],
-		LiveMode:    r["livemode"],
-		Object:      r["object"],
-		Paid:        r["paid"],
-		Refunded:    r["refunded"],
-		Card:        card,
+		Fee:         r["fee"].(int),
+		ID:          r["id"].(string),
+		LiveMode:    r["livemode"].(bool),
+		Object:      r["object"].(string),
+		Paid:        r["paid"].(bool),
+		Refunded:    r["refunded"].(bool),
+		Card:        &card,
 	}
 	return
 }
@@ -175,9 +174,9 @@ func CreateCharge(amount int, currency string, customer *Customer, card *Card, d
 		// TODO: throw an error
 	}
 	values := make(url.Values)
-	values.Set("amount", amount)
+	values.Set("amount", strconv.Itoa(amount))
 	values.Set("currency", currency)
-	if description != nil {
+	if description != "" {
 		values.Set("description", description)
 	}
 	if customer != nil {
@@ -185,37 +184,37 @@ func CreateCharge(amount int, currency string, customer *Customer, card *Card, d
 	}
 	if card != nil {
 		if card.Token != nil {
-			values.set("card", card.Token.ID)
+			values.Set("card", card.Token.ID)
 		} else {
-			if card.Number == nil {
+			if card.Number == "" {
 				// TODO: throw an error
-			} else if card.ExpMonth == nil {
+			} else if card.ExpMonth < 0 {
 				// TODO: throw an error
-			} else if card.ExpYear == nil {
+			} else if card.ExpYear < 0 {
 				// TODO: throw an error
 			} else {
 				values.Set("card[\"number\"]", card.Number)
-				values.Set("card[\"exp_month\"]", card.ExpMonth)
-				values.Set("card[\"exp_year\"]", card.ExpYear)
-				if card.CVC != nil {
+				values.Set("card[\"exp_month\"]", strconv.Itoa(card.ExpMonth))
+				values.Set("card[\"exp_year\"]", strconv.Itoa(card.ExpYear))
+				if card.CVC != "" {
 					values.Set("card[\"cvc\"]", card.CVC)
 				}
-				if card.Name != nil {
+				if card.Name != "" {
 					values.Set("card[\"name\"]", card.Name)
 				}
-				if card.Address1 != nil {
+				if card.Address1 != "" {
 					values.Set("card[\"address_line1\"]", card.Address1)
 				}
-				if card.Address2 != nil {
+				if card.Address2 != "" {
 					values.Set("card[\"address_line2\"]", card.Address2)
 				}
-				if card.AddressZip != nil {
+				if card.AddressZip != "" {
 					values.Set("card[\"address_zip\"]", card.AddressZip)
 				}
-				if card.AddressState != nil {
+				if card.AddressState != "" {
 					values.Set("card[\"address_state\"]", card.AddressState)
 				}
-				if card.AddressCountry != nil {
+				if card.AddressCountry != "" {
 					values.Set("card[\"address_country\"]", card.AddressCountry)
 				}
 			}
@@ -226,7 +225,7 @@ func CreateCharge(amount int, currency string, customer *Customer, card *Card, d
 	if err != nil {
 		return nil, err
 	}
-	_, fail := r["error"]
+	_, fail := r.(map[string]interface{})["error"]
 	if fail {
 		// TODO: Throw an error
 	}
@@ -235,14 +234,14 @@ func CreateCharge(amount int, currency string, customer *Customer, card *Card, d
 }
 
 func GetCharge(id string) (resp *Charge, err error) {
-	if id == nil {
+	if id == "" {
 		// TODO: throw an error
 	}
-	r, err := apiRequest("GET", "charges/"+id, nil)
+	r, err := apiRequest("GET", "charges/"+id, "")
 	if err != nil {
 		return nil, err
 	}
-	_, fail := r["error"]
+	_, fail := r.(map[string]interface{})["error"]
 	if fail {
 		// TODO: Throw an error
 	}
@@ -255,16 +254,16 @@ func (c *Charge) Refund(amount int) (resp *Charge, err error) {
 		// TODO: throw an error
 	}
 	var body string
-	if amount != nil {
+	if amount >= 0 {
 		values := make(url.Values)
-		values.Set("amount", amount)
+		values.Set("amount", strconv.Itoa(amount))
 		body = values.Encode()
 	}
-	r, err := apiRequest("POST", "charges/"+id+"/refund", body)
+	r, err := apiRequest("POST", "charges/"+c.ID+"/refund", body)
 	if err != nil {
 		return nil, err
 	}
-	_, fail := r["error"]
+	_, fail := r.(map[string]interface{})["error"]
 	if fail {
 		// TODO: Throw an error
 	}
@@ -274,30 +273,30 @@ func (c *Charge) Refund(amount int) (resp *Charge, err error) {
 
 func ListCharges(count, offset int, customer string) (resp []*Charge, err error) {
 	values := make(url.Values)
-	if count != nil {
-		values.Set("count", count)
+	if count >= 0 {
+		values.Set("count", strconv.Itoa(count))
 	}
-	if offset != nil {
-		values.Set("offset", offset)
+	if offset >= 0 {
+		values.Set("offset", strconv.Itoa(offset))
 	}
-	if customer != nil {
+	if customer != "" {
 		values.Set("customer", customer)
 	}
-	params = values.Encode()
+	params := values.Encode()
 	if params != "" {
 		params = "?" + params
 	}
-	r, err := apiRequest("GET", "charges"+params, nil)
+	r, err := apiRequest("GET", "charges"+params, "")
 	if err != nil {
 		return nil, err
 	}
-	_, fail := r["error"]
+	_, fail := r.(map[string]interface{})["error"]
 	if fail {
 		// TODO: Throw an error
 	}
 	resp = []*Charge{}
-	for _, charge := range r["data"] {
-		c, err = jsonToCharge(r)
+	for _, charge := range r.(map[string][]interface{})["data"] {
+		c, err := jsonToCharge(charge)
 		if err != nil {
 			// TODO: throw an error
 		}
@@ -328,8 +327,8 @@ func ListCustomers(count, offset int) (resp []*Customer, err error)
 type Card struct {
 	Token          *Token
 	Number         string
-	ExpMonth       string
-	ExpYear        string
+	ExpMonth       int
+	ExpYear        int
 	CVC            string
 	Name           string
 	Address1       string
