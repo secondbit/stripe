@@ -196,29 +196,29 @@ func CreateCharge(amount int, currency string, customer *Customer, card *Card, d
 			} else if card.ExpYear < 0 {
 				// TODO: throw an error
 			} else {
-				values.Set("card[\"number\"]", card.Number)
-				values.Set("card[\"exp_month\"]", strconv.Itoa(card.ExpMonth))
-				values.Set("card[\"exp_year\"]", strconv.Itoa(card.ExpYear))
+				values.Set("card[number]", card.Number)
+				values.Set("card[exp_month]", strconv.Itoa(card.ExpMonth))
+				values.Set("card[exp_year]", strconv.Itoa(card.ExpYear))
 				if card.CVC != "" {
-					values.Set("card[\"cvc\"]", card.CVC)
+					values.Set("card[cvc]", card.CVC)
 				}
 				if card.Name != "" {
-					values.Set("card[\"name\"]", card.Name)
+					values.Set("card[name]", card.Name)
 				}
 				if card.Address1 != "" {
-					values.Set("card[\"address_line1\"]", card.Address1)
+					values.Set("card[address_line1]", card.Address1)
 				}
 				if card.Address2 != "" {
-					values.Set("card[\"address_line2\"]", card.Address2)
+					values.Set("card[address_line2]", card.Address2)
 				}
 				if card.AddressZip != "" {
-					values.Set("card[\"address_zip\"]", card.AddressZip)
+					values.Set("card[address_zip]", card.AddressZip)
 				}
 				if card.AddressState != "" {
-					values.Set("card[\"address_state\"]", card.AddressState)
+					values.Set("card[address_state]", card.AddressState)
 				}
 				if card.AddressCountry != "" {
-					values.Set("card[\"address_country\"]", card.AddressCountry)
+					values.Set("card[address_country]", card.AddressCountry)
 				}
 			}
 		}
