@@ -3,6 +3,7 @@ package stripe
 import (
 	"bytes"
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -109,10 +110,12 @@ func apiRequest(method, url string, body string) (resp interface{}, err error) {
 	default:
 		// TODO: Throw a generic error
 	}
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(hresp.Body)
+	r, err := ioutil.ReadAll(hresp.Body)
 	hresp.Body.Close()
-	err = json.Unmarshal(buf.Bytes(), &resp)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(r, &resp)
 	return resp, err
 }
 
