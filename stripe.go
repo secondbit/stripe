@@ -1,5 +1,15 @@
 package stripe
 
+import (
+	"encoding/json"
+	"io"
+	"net/http"
+	"net/url"
+	"os"
+	"strconv"
+	"time"
+)
+
 var (
 	HOST     = "api.stripe.com"
 	VERSION  = "v1"
@@ -7,19 +17,15 @@ var (
 )
 
 type BadRequestError struct {
-
 }
 
 type UnauthorizedError struct {
-
 }
 
 type NotFoundError struct {
-
 }
 
 type ServerError struct {
-
 }
 
 type InvalidRequestError struct {
