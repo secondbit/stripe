@@ -4,22 +4,22 @@ import (
 	"bytes"
 	"io/ioutil"
 	"net/http"
-        "strconv"
+	"strconv"
 )
 
 var (
-	HOST     = "api.stripe.com"
-	VERSION  = 1
+	HOST    = "api.stripe.com"
+	VERSION = 1
 )
 
 type Stripe struct {
-        Host            string
-        Version         int
-        AuthKey         string
+	Host    string
+	Version int
+	AuthKey string
 }
 
 func New(auth string) *Stripe {
-        return &Stripe{HOST, VERSION, auth}
+	return &Stripe{HOST, VERSION, auth}
 }
 
 type BadRequestError struct {
@@ -35,10 +35,10 @@ type ServerError struct {
 }
 
 type RawError struct {
-        Type            string          "type"
-        Param           string          "param"
-        Code            string          "code"
-        Message         string          "message"
+	Type    string "type"
+	Param   string "param"
+	Code    string "code"
+	Message string "message"
 }
 
 type InvalidRequestError struct {
