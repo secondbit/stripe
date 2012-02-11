@@ -10,13 +10,15 @@ type Charge struct {
 	Amount   int    "amount"
 	Currency string "currency"
 	Card     struct {
-		Type     string "type"
-		ExpYear  int    "exp_year"
-		CVCCheck string "cvc_check"
-		Country  string "country"
-		LastFour string "last4"
-		Object   string "object"
-		ExpMonth int    "exp_month"
+		Type         string "type"
+		ExpYear      int    "exp_year"
+		Country      string "country"
+		LastFour     string "last4"
+		Object       string "object"
+		ExpMonth     int    "exp_month"
+		CVCCheck     string "cvc_check"
+		AddressCheck string "address_line1_check"
+		ZipCheck     string "address_zip_check"
 	}
 	Customer    string
 	Description string    "description"
