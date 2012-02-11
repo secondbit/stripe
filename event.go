@@ -76,7 +76,7 @@ func (stripe *Stripe) QueryEvents(event_type string, count, offset int, date, co
 	if err != nil {
 		return nil, err
 	}
-	if raw.Error.Code != "" {
+	if raw.Error != nil {
 		// TODO: throw an error
 	}
 	resp = raw.Data

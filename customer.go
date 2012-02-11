@@ -43,7 +43,7 @@ func (stripe *Stripe) DeleteCustomer(id string) (success bool, err error) {
 		Error   *RawError "error"
 	}
 	err = json.Unmarshal(r, &raw)
-	if raw.Error.Code != "" {
+	if raw.Error != nil {
 		// TODO: throw an error
 	}
 	return raw.Success, err
@@ -78,7 +78,7 @@ func (stripe *Stripe) QueryCustomers(count, offset int) (resp []*Customer, err e
 	if err != nil {
 		return nil, err
 	}
-	if raw.Error.Code != "" {
+	if raw.Error != nil {
 		// TODO: throw an error
 	}
 	resp = raw.Data

@@ -93,7 +93,7 @@ func (stripe *Stripe) QueryCharges(count, offset int, customer string) (resp []*
 	if err != nil {
 		return nil, err
 	}
-	if raw.Error.Code != "" {
+	if raw.Error != nil {
 		// TODO: throw an error
 	}
 	resp = raw.Data

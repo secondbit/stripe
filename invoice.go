@@ -86,7 +86,7 @@ func (stripe *Stripe) QueryInvoices(count, offset int, customer string) (resp []
 	if err != nil {
 		return nil, err
 	}
-	if raw.Error.Code != "" {
+	if raw.Error != nil {
 		// TODO: throw an error
 	}
 	resp = raw.Data
@@ -172,7 +172,7 @@ func (stripe *Stripe) DeleteInvoiceItem(id string) (success bool, err error) {
 		Error   *RawError "error"
 	}
 	err = json.Unmarshal(r, &raw)
-	if raw.Error.Code != "" {
+	if raw.Error != nil {
 		// TODO: throw an error
 	}
 	return raw.Success, err
@@ -214,7 +214,7 @@ func (stripe *Stripe) QueryInvoiceItems(count, offset int, customer string) (res
 	if err != nil {
 		return nil, err
 	}
-	if raw.Error.Code != "" {
+	if raw.Error != nil {
 		// TODO: throw an error
 	}
 	resp = raw.Data
