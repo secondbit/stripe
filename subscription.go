@@ -51,35 +51,39 @@ func (stripe *Stripe) RawSubscribe(customer, plan, coupon string, trial_end int,
 	if prorate != true {
 		values.Set("prorate", "false")
 	}
-	if number != "" {
-		values.Set("card[number]", number)
-	}
-	if exp_month != "" {
-		values.Set("card[exp_month]", exp_month)
-	}
-	if exp_year != "" {
-		values.Set("card[exp_year]", exp_year)
-	}
-	if cvc != "" {
-		values.Set("card[cvc]", cvc)
-	}
-	if name != "" {
-		values.Set("card[name]", name)
-	}
-	if address1 != "" {
-		values.Set("card[address_line1]", address1)
-	}
-	if address2 != "" {
-		values.Set("card[address_line2]", address2)
-	}
-	if zip != "" {
-		values.Set("card[address_zip]", zip)
-	}
-	if state != "" {
-		values.Set("card[address_state]", state)
-	}
-	if country != "" {
-		values.Set("card[address_country]", country)
+	if token != "" {
+		values.Set("card", token)
+	} else {
+		if number != "" {
+			values.Set("card[number]", number)
+		}
+		if exp_month != "" {
+			values.Set("card[exp_month]", exp_month)
+		}
+		if exp_year != "" {
+			values.Set("card[exp_year]", exp_year)
+		}
+		if cvc != "" {
+			values.Set("card[cvc]", cvc)
+		}
+		if name != "" {
+			values.Set("card[name]", name)
+		}
+		if address1 != "" {
+			values.Set("card[address_line1]", address1)
+		}
+		if address2 != "" {
+			values.Set("card[address_line2]", address2)
+		}
+		if zip != "" {
+			values.Set("card[address_zip]", zip)
+		}
+		if state != "" {
+			values.Set("card[address_state]", state)
+		}
+		if country != "" {
+			values.Set("card[address_country]", country)
+		}
 	}
 	data := values.Encode()
 	r, err := stripe.request("POST", "customers/"+customer+"/subscription", data)
