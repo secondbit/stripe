@@ -20,22 +20,26 @@ type Subscription struct {
 }
 
 func (stripe *Stripe) Subscribe(customer, plan string) (resp *Subscription, err error) {
-	return stripe.RawSubscribe(customer, plan, "", -1, "", "", "", "", "", "", "", "", "", "", true)
+	return stripe.RawSubscribe(customer, plan, "", -1, "", "", "", "", "", "", "", "", "", "", "", true)
 }
 
 func (stripe *Stripe) SubscribeWithCoupon(customer, plan, coupon string) (resp *Subscription, err error) {
-	return stripe.RawSubscribe(customer, plan, coupon, -1, "", "", "", "", "", "", "", "", "", "", true)
+	return stripe.RawSubscribe(customer, plan, coupon, -1, "", "", "", "", "", "", "", "", "", "", "", true)
 }
 
 func (stripe *Stripe) SubscribeWithTrial(customer, plan string, trial_end int) (resp *Subscription, err error) {
-	return stripe.RawSubscribe(customer, plan, "", trial_end, "", "", "", "", "", "", "", "", "", "", true)
+	return stripe.RawSubscribe(customer, plan, "", trial_end, "", "", "", "", "", "", "", "", "", "", "", true)
+}
+
+func (stripe *Stripe) SubscribeWithToken(customer, plan, token string) (resp *Subscription, err error) {
+	return stripe.RawSubscribe(customer, plan, "", -1, token, "", "", "", "", "", "", "", "", "", "", true)
 }
 
 func (stripe *Stripe) SubscribeWithCard(customer, plan, number, exp_month, exp_year, cvc, name, address1, address2, zip, state, country string) (resp *Subscription, err error) {
-	return stripe.RawSubscribe(customer, plan, "", -1, number, exp_month, exp_year, cvc, name, address1, address2, zip, state, country, true)
+	return stripe.RawSubscribe(customer, plan, "", -1, "", number, exp_month, exp_year, cvc, name, address1, address2, zip, state, country, true)
 }
 
-func (stripe *Stripe) RawSubscribe(customer, plan, coupon string, trial_end int, number, exp_month, exp_year, cvc, name, address1, address2, zip, state, country string, prorate bool) (resp *Subscription, err error) {
+func (stripe *Stripe) RawSubscribe(customer, plan, coupon string, trial_end int, token, number, exp_month, exp_year, cvc, name, address1, address2, zip, state, country string, prorate bool) (resp *Subscription, err error) {
 	values := make(url.Values)
 	values.Set("plan", plan)
 	if coupon != "" {
