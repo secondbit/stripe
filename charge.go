@@ -32,6 +32,67 @@ type Charge struct {
 	Error       *RawError "error"
 }
 
+func (stripe *Stripe) CreateCharge(amount int, currency string) (resp *Charge, err error) {
+	return stripe.RawCreateCharge(amount, currency, "", "", "", "", "", "", "", "", "", "", "", "")
+}
+
+func (stripe *Stripe) ChargeCustomer(amount int, currency, customer string) (resp *Charge, err error) {
+	return stripe.RawCreateCharge(amount, currency, customer, "", "", "", "", "", "", "", "", "", "", "")
+}
+
+func (stripe *Stripe) ChargeCustomerWithDescription(amount int, currency, customer, description string) (resp *Charge, err error) {
+	return stripe.RawCreateCharge(amount, currency, customer, description, "", "", "", "", "", "", "", "", "", "")
+}
+
+func (stripe *Stripe) RawCreateCharge(amount int, currency, customer, description, number, exp_month, exp_year, cvc, name, address1, address2, zip, state, country string) (resp *Charge, err error) {
+	values := make(url.Values)
+	values.Set("amount", strconv.Itoa(amount))
+	values.Set("currency", currency)
+	if customer != "" {
+		values.Set("customer", customer)
+	}
+	if description != "" {
+		values.Set("description", description)
+	}
+	if number != "" {
+		values.Set("card[number]", number)
+	}
+	if exp_month != "" {
+		values.Set("card[exp_month]", exp_month)
+	}
+	if exp_year != "" {
+		values.Set("card[exp_year]", exp_year)
+	}
+	if cvc != "" {
+		values.Set("card[cvc]", cvc)
+	}
+	if name != "" {
+		values.Set("card[name]", name)
+	}
+	if address1 != "" {
+		values.Set("card[address_line1]", address1)
+	}
+	if address2 != "" {
+		values.Set("card[address_line2]", address2)
+	}
+	if zip != "" {
+		values.Set("card[address_zip]", zip)
+	}
+	if state != "" {
+		values.Set("card[address_state]", state)
+	}
+	if country != "" {
+		values.Set("card[address_country]", country)
+	}
+	data := values.Encode()
+	r, err := stripe.request("POST", "charges", data)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(r, &resp)
+	return
+}
+
 func (stripe *Stripe) GetCharge(id string) (resp *Charge, err error) {
 	if id == "" {
 		// TODO: throw an error
