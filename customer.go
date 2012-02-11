@@ -72,11 +72,15 @@ func (stripe *Stripe) QueryCustomers(count, offset int) (resp []*Customer, err e
 	var raw struct {
 		Count int         "count"
 		Data  []*Customer "data"
+                Error *RawError   "error"
 	}
 	err = json.Unmarshal(r, &raw)
 	if err != nil {
 		return nil, err
 	}
+        if raw.Error.Code != "" {
+                // TODO: throw an error
+        }
 	resp = raw.Data
 	return
 }
