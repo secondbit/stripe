@@ -161,7 +161,7 @@ func (stripe *Stripe) QueryCharges(count, offset int, customer string) (resp []*
 		return nil, err
 	}
 	if raw.Error != nil {
-		// TODO: throw an error
+		return nil, raw.Error
 	}
 	resp = raw.Data
 	return
