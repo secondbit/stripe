@@ -3,7 +3,9 @@ package stripe
 import (
 	"encoding/json"
 	"net/url"
-	"strconv"
+	"fmt"
+        "strconv"
+        "time"
 )
 
 type Customer struct {
@@ -23,12 +25,48 @@ type Customer struct {
 	Error   *RawError "error"
 }
 
+func (stripe *Stripe) CreateCustomerWithToken(email, token, description, plan string, trial_end time.Time, coupon string) (resp *Customer, err error) {
+        values := make(url.Values)
+        if email != "" {
+                values.Set("email", email)
+        }
+        if token != "" {
+                values.Set("card", token)
+        }
+        if description != "" {
+                values.Set("description", description)
+        }
+        if plan != "" {
+                values.Set("plan", plan)
+        }
+        if trial_end.IsZero() {
+                // TODO: There has to be a better way to convert int64 to string
+                values.Set("trial_end", fmt.Sprintf("%v", trial_end.Unix()))
+        }
+        if coupon != "" {
+                values.Set("coupon", "")
+        }
+        data := values.Encode()
+        r, err := stripe.request("POST", "customers", data)
+        if err != nil {
+                return nil, err
+        }
+        err = json.Unmarshal(r, &resp)
+        return
+}
+
 func (stripe *Stripe) GetCustomer(id string) (resp *Customer, err error) {
 	r, err := stripe.request("GET", "customers/"+id, "")
 	if err != nil {
 		return nil, err
 	}
 	err = json.Unmarshal(r, &resp)
+        if err != nil {
+                return nil, err
+        }
+        if resp.Error != nil {
+                err = resp.Error
+        }
 	return resp, err
 }
 
