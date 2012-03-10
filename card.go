@@ -11,15 +11,21 @@ type CardToken struct {
 	Object   string "object"
 	LiveMode bool   "livemode"
 	Card     struct {
-		Type     string "type"
-		ExpYear  int    "exp_year"
-		CVCCheck string "cvc_check"
-		Country  string "country"
-		LastFour string "last4"
-		Object   string "object"
-		ExpMonth int    "exp_month"
-	}
-	Created int       "created"
+                Type     string `json:"type"`
+                ExpYear  int    `json:"exp_year"`
+                CVCCheck string `json:"cvc_check"`
+                Country  string `json:"country"`
+                Name string `json:"name"`
+                AddressCountry string `json:"address_country"`
+                State string `json:"address_state"`
+                Zip string `json:"address_zip"`
+                Address1 string `json:"address_line1"`
+                Address2 string `json:"address_line2"`
+                LastFour string `json:"last4"`
+                Object   string `json:"object"`
+                ExpMonth int    `json:"exp_month"`
+        } `json:"card"`
+	Created int64       "created"
 	ID      string    "id"
 	Error   *RawError "error"
 }
@@ -73,5 +79,11 @@ func (stripe *Stripe) CreateCardTokenWithAll(number, exp_month, exp_year, cvc, n
 		return nil, err
 	}
 	err = json.Unmarshal(r, &resp)
-	return
+        if err != nil {
+                return nil, err
+        }
+        if resp.Error != nil {
+                return nil, resp.Error
+        }
+	return resp, nil
 }
