@@ -36,6 +36,12 @@ func (stripe *Stripe) GetCardToken(id string) (resp *CardToken, err error) {
 		return nil, err
 	}
 	err = json.Unmarshal(r, &resp)
+        if err != nil {
+                return nil, err
+        }
+        if resp.Error != nil {
+                return nil, resp.Error
+        }
 	return resp, err
 }
 
