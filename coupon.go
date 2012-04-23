@@ -77,7 +77,7 @@ func (stripe *Stripe) DeleteCoupon(id string) (success bool, err error) {
 	}
 	err = json.Unmarshal(r, &raw)
         if err != nil {
-                return nil, err
+                return false, err
         }
 	if raw.Error != nil {
 		// TODO: throw an error
