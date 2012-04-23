@@ -16,6 +16,7 @@ type Event struct {
 	Created         int    "created"
 	ID              string "id"
 	Object          string "object"
+        Error           *RawError "error"
 }
 
 func (stripe *Stripe) GetEvent(id string) (resp *Event, err error) {
@@ -28,7 +29,7 @@ func (stripe *Stripe) GetEvent(id string) (resp *Event, err error) {
                 return nil, err
         }
         if resp.Error != nil {
-                // TODO: Throw an error
+                //TODO: Throw an error
         }
 	return
 }
