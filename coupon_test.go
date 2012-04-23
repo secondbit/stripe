@@ -5,6 +5,10 @@ import (
         "io/ioutil"
 )
 
+//TODO: TestGetCoupons
+//TODO: TestCreateCoupon
+//TODO: TestDeleteCoupon
+
 func TestListCoupons(t *testing.T) {
         key, err := ioutil.ReadFile("key")
         if err != nil {

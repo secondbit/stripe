@@ -5,6 +5,10 @@ import (
         "io/ioutil"
 )
 
+//TODO: TestGetCharge
+//TODO: TestCreateCharge
+//TODO: TestRefund
+
 func TestListCharges(t *testing.T) {
         key, err := ioutil.ReadFile("key")
         if err != nil {

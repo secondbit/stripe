@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/url"
 	"strconv"
+        "errors"
 )
 
 type Charge struct {
@@ -94,18 +95,30 @@ func (stripe *Stripe) RawCreateCharge(amount int, currency, customer, descriptio
 		return nil, err
 	}
 	err = json.Unmarshal(r, &resp)
+        if err != nil {
+                return nil, err
+        }
+        if resp.Error != nil {
+                // TODO: Throw an error
+        }
 	return
 }
 
 func (stripe *Stripe) GetCharge(id string) (resp *Charge, err error) {
 	if id == "" {
-		// TODO: throw an error
+		return nil, errors.New("No ID set.")
 	}
 	r, err := stripe.request("GET", "charges/"+id, "")
 	if err != nil {
 		return nil, err
 	}
 	err = json.Unmarshal(r, &resp)
+        if err != nil {
+                return nil, err
+        }
+        if resp.Error != nil {
+                // TODO: Throw an error
+        }
 	return resp, err
 }
 
@@ -121,6 +134,12 @@ func (stripe *Stripe) RefundCharge(id string, amount int) (resp *Charge, err err
 		return nil, err
 	}
 	err = json.Unmarshal(r, &resp)
+        if err != nil {
+                return nil, err
+        }
+        if resp.Error != nil {
+                // TODO: Throw an error
+        }
 	return
 }
 
@@ -161,7 +180,7 @@ func (stripe *Stripe) QueryCharges(count, offset int, customer string) (resp []*
 		return nil, err
 	}
 	if raw.Error != nil {
-		return nil, raw.Error
+                //TODO: Throw an error
 	}
 	resp = raw.Data
 	return

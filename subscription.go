@@ -91,6 +91,12 @@ func (stripe *Stripe) RawSubscribe(customer, plan, coupon string, trial_end int,
 		return nil, err
 	}
 	err = json.Unmarshal(r, &resp)
+        if err != nil {
+                return nil, err
+        }
+        if resp.Error != nil {
+                // TODO: Throw an error
+        }
 	return
 }
 
@@ -112,5 +118,11 @@ func (stripe *Stripe) RawUnsubscribe(customer string, at_period_end bool) (resp 
 		return nil, err
 	}
 	err = json.Unmarshal(r, &resp)
+        if err != nil {
+                return nil, err
+        }
+        if resp.Error != nil {
+                // TODO: Throw an error
+        }
 	return
 }

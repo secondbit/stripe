@@ -6,6 +6,10 @@ import (
         "time"
 )
 
+// TODO: TestGetCustomer
+// TODO: TestUpdateCustomer
+// TODO: TestDeleteCustomer
+
 func TestListCustomers(t *testing.T) {
         key, err := ioutil.ReadFile("key")
         if err != nil {

@@ -37,6 +37,12 @@ func (stripe *Stripe) CreatePlanWithTrial(id, name, interval, currency string, a
 		return nil, err
 	}
 	err = json.Unmarshal(r, &resp)
+        if err != nil {
+                return nil, err
+        }
+        if resp.Error != nil {
+                // TODO: Throw an error
+        }
 	return
 }
 
@@ -46,6 +52,12 @@ func (stripe *Stripe) GetPlan(id string) (resp *Plan, err error) {
 		return nil, err
 	}
 	err = json.Unmarshal(r, &resp)
+        if err != nil {
+                return nil, err
+        }
+        if resp.Error != nil {
+                // TODO: Throw an error
+        }
 	return
 }
 
@@ -58,6 +70,12 @@ func (stripe *Stripe) UpdatePlan(id, name string) (resp *Plan, err error) {
 		return nil, err
 	}
 	err = json.Unmarshal(r, &resp)
+        if err != nil {
+                return nil, err
+        }
+        if resp.Error != nil {
+                // TODO: Throw an error
+        }
 	return
 }
 
@@ -72,6 +90,9 @@ func (stripe *Stripe) DeletePlan(id string) (success bool, err error) {
 		Error   *RawError "error"
 	}
 	err = json.Unmarshal(r, &raw)
+        if err != nil {
+                return false, err
+        }
 	if raw.Error != nil {
 		// TODO: throw an error
 	}

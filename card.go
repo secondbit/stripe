@@ -40,7 +40,7 @@ func (stripe *Stripe) GetCardToken(id string) (resp *CardToken, err error) {
                 return nil, err
         }
         if resp.Error != nil {
-                return nil, resp.Error
+                //TODO: Throw an error
         }
 	return resp, err
 }
@@ -89,7 +89,7 @@ func (stripe *Stripe) CreateCardTokenWithAll(number, exp_month, exp_year, cvc, n
                 return nil, err
         }
         if resp.Error != nil {
-                return nil, resp.Error
+                //TODO: Throw an error
         }
 	return resp, nil
 }

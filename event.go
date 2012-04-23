@@ -24,6 +24,12 @@ func (stripe *Stripe) GetEvent(id string) (resp *Event, err error) {
 		return nil, err
 	}
 	err = json.Unmarshal(r, &resp)
+        if err != nil {
+                return nil, err
+        }
+        if resp.Error != nil {
+                // TODO: Throw an error
+        }
 	return
 }
 

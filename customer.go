@@ -3,7 +3,6 @@ package stripe
 import (
 	"encoding/json"
 	"net/url"
-	"fmt"
         "strconv"
         "time"
 )
@@ -40,8 +39,7 @@ func (stripe *Stripe) CreateCustomerWithToken(email, token, description, plan st
                 values.Set("plan", plan)
         }
         if trial_end.IsZero() {
-                // TODO: There has to be a better way to convert int64 to string
-                values.Set("trial_end", fmt.Sprintf("%v", trial_end.Unix()))
+                values.Set("trial_end", strconv.FormatInt(trial_end.Unix(), 10))
         }
         if coupon != "" {
                 values.Set("coupon", "")
@@ -52,8 +50,16 @@ func (stripe *Stripe) CreateCustomerWithToken(email, token, description, plan st
                 return nil, err
         }
         err = json.Unmarshal(r, &resp)
+        if err != nil {
+                return nil, err
+        }
+        if resp.Error != nil {
+                // TODO: Throw an error
+        }
         return
 }
+
+// TODO: UpdateCustomer
 
 func (stripe *Stripe) GetCustomer(id string) (resp *Customer, err error) {
 	r, err := stripe.request("GET", "customers/"+id, "")
@@ -81,6 +87,9 @@ func (stripe *Stripe) DeleteCustomer(id string) (success bool, err error) {
 		Error   *RawError "error"
 	}
 	err = json.Unmarshal(r, &raw)
+        if err != nil {
+                return false, err
+        }
 	if raw.Error != nil {
 		// TODO: throw an error
 	}

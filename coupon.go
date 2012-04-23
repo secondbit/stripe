@@ -41,6 +41,12 @@ func (stripe *Stripe) RawCreateCoupon(id, duration string, percent_off, duration
 		return nil, err
 	}
 	err = json.Unmarshal(r, &resp)
+        if err != nil {
+                return nil, err
+        }
+        if resp.Error != nil {
+                // TODO: Throw an error
+        }
 	return
 }
 
@@ -50,6 +56,12 @@ func (stripe *Stripe) GetCoupon(id string) (resp *Coupon, err error) {
 		return nil, err
 	}
 	err = json.Unmarshal(r, &resp)
+        if err != nil {
+                return nil, err
+        }
+        if resp.Error != nil {
+                // TODO: Throw an error
+        }
 	return
 }
 
@@ -64,6 +76,9 @@ func (stripe *Stripe) DeleteCoupon(id string) (success bool, err error) {
 		Error   *RawError "error"
 	}
 	err = json.Unmarshal(r, &raw)
+        if err != nil {
+                return nil, err
+        }
 	if raw.Error != nil {
 		// TODO: throw an error
 	}

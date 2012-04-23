@@ -5,6 +5,8 @@ import (
         "io/ioutil"
 )
 
+//TODO: TestGetEvent
+
 func TestListEvents(t *testing.T) {
         key, err := ioutil.ReadFile("key")
         if err != nil {

@@ -5,6 +5,11 @@ import (
         "io/ioutil"
 )
 
+// TODO: TestCreatePlan
+// TODO: TestReadPlan
+// TODO: TestUpdatePlan
+// TODO: TestDeletePlan
+
 func TestListPlans(t *testing.T) {
         key, err := ioutil.ReadFile("key")
         if err != nil {
