@@ -69,7 +69,7 @@ func (customer *Customer) Values(values *url.Values) error {
 // trial_end overrides the plan's default trial period, if not -1.
 func (stripe *Stripe) CreateCustomer(customer *Customer, chargeable Chargeable, plan, coupon string, trial_end int64) (resp *Customer, err error) {
 	values := make(url.Values)
-	err = customer.Values(values)
+	err = customer.Values(&values)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +103,45 @@ func (stripe *Stripe) CreateCustomer(customer *Customer, chargeable Chargeable, 
 	return
 }
 
-// TODO: UpdateCustomer
+// UpdateCustomer updates the information Stripe has on *customer.
+//
+// All arguments except the Customer object are optional.
+//
+// If a Chargeable is provided, it is attached to *customer and automatically validated. Pass nil to omit the Chargeable.
+//
+// If couponID is non-empty, it is used as a Coupon that will be applied to all of *customer's recurring charges.
+func (stripe *Stripe) UpdateCustomer(customer *Customer, chargeable Chargeable, couponID string) (resp *Customer, err error) {
+	if customer.ID == "" {
+		// TODO: throw an error
+	}
+	values := make(url.Values)
+	err = customer.Values(&values)
+	if err != nil {
+		return nil, err
+	}
+	if chargeable != nil {
+		err = chargeable.ChargeValues(&values)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if couponID != "" {
+		values.Set("coupon", couponID)
+	}
+	data := values.Encode()
+	r, err := stripe.request("POST", "customers/"+customer.ID, data)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(r, &resp)
+	if err != nil {
+		return nil, err
+	}
+	if resp.Error != nil {
+		// TODO: Throw an error
+	}
+	return
+}
 
 // GetCustomer retrieves information on the Customer with ID of id.
 func (stripe *Stripe) GetCustomer(id string) (resp *Customer, err error) {
