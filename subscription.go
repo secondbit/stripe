@@ -7,104 +7,88 @@ import (
 )
 
 type Subscription struct {
-	Status      string    "status"
-	Object      string    "object"
-	PeriodStart int       "current_period_start"
-	PeriodEnd   int       "current_period_end"
-	Start       int       "start"
-	TrialStart  int       "trial_start"
-	TrialEnd    int       "trial_end"
-	Plan        *Plan     "plan"
-	Customer    string    "customer"
-	Error       *RawError "error"
+	Status            string    `json:"status"` // "trialing"/"active"/"past_due"/"canceled"/"unpaid"
+	Object            string    `json:"object"` // Should always be "subscription"
+	PeriodStart       int64     `json:"current_period_start"`
+	PeriodEnd         int64     `json:"current_period_end"`
+	CancelAtPeriodEnd bool      `json:"cancel_at_period_end"`
+	CanceledAt        int64     `json:"canceled_at"`
+	EndedAt           int64     `json:"ended_at"`
+	Start             int64     `json:"start"`
+	TrialStart        int64     `json:"trial_start"`
+	TrialEnd          int64     `json:"trial_end"`
+	Plan              *Plan     `json:"plan"`
+	Customer          string    `json:"customer"` // The Customer's ID
+	Error             *RawError `json:"error"`
 }
 
-func (stripe *Stripe) Subscribe(customer, plan string) (resp *Subscription, err error) {
-	return stripe.RawSubscribe(customer, plan, "", -1, "", "", "", "", "", "", "", "", "", "", "", true)
-}
-
-func (stripe *Stripe) SubscribeWithCoupon(customer, plan, coupon string) (resp *Subscription, err error) {
-	return stripe.RawSubscribe(customer, plan, coupon, -1, "", "", "", "", "", "", "", "", "", "", "", true)
-}
-
-func (stripe *Stripe) SubscribeWithTrial(customer, plan string, trial_end int) (resp *Subscription, err error) {
-	return stripe.RawSubscribe(customer, plan, "", trial_end, "", "", "", "", "", "", "", "", "", "", "", true)
-}
-
-func (stripe *Stripe) SubscribeWithToken(customer, plan, token string) (resp *Subscription, err error) {
-	return stripe.RawSubscribe(customer, plan, "", -1, token, "", "", "", "", "", "", "", "", "", "", true)
-}
-
-func (stripe *Stripe) SubscribeWithCard(customer, plan, number, exp_month, exp_year, cvc, name, address1, address2, zip, state, country string) (resp *Subscription, err error) {
-	return stripe.RawSubscribe(customer, plan, "", -1, "", number, exp_month, exp_year, cvc, name, address1, address2, zip, state, country, true)
-}
-
-func (stripe *Stripe) RawSubscribe(customer, plan, coupon string, trial_end int, token, number, exp_month, exp_year, cvc, name, address1, address2, zip, state, country string, prorate bool) (resp *Subscription, err error) {
-	values := make(url.Values)
-	values.Set("plan", plan)
-	if coupon != "" {
-		values.Set("coupon", coupon)
+// Values assigns the applicable properties of *subscription to the appropriate keys
+// in *values. This makes constructing an HTTP request around a Subscription simpler.
+func (subscription *Subscription) Values(values *url.Values) error {
+	if subscription == nil {
+		// TODO: throw an error
 	}
-	if trial_end >= 0 {
-		values.Set("trial_end", strconv.Itoa(trial_end))
+	if subscription.Plan == nil {
+		// TODO: throw an error
+	}
+	if subscription.Plan.ID == "" {
+		// TODO: throw an error
+	}
+	values.Set("plan", subscription.Plan.ID)
+	if subscription.TrialEnd > 0 {
+		values.Set("trial_end", strconv.FormatInt(subscription.TrialEnd, 10))
+	}
+}
+
+// Subscribe updates the customer's plan. The customer will be billed monthly according to the new plan.
+//
+// *subscription is the only required argument. *subscription.Plan.ID and *subscription.Customer.ID must be set.
+//
+// If couponID is non-empty, it will be used as the ID of a coupon to apply to the customer.
+//
+// If prorate is true, the customer will be prorated to make up for the price changes
+//
+// If chargeable is non-nil, it will be attached to the customer. Can be either a token or a credit card.
+func (stripe *Stripe) Subscribe(subscription *Subscription, couponID string, prorate bool, chargeable Chargeable) (resp *Subscription, err error) {
+	values := make(url.Values)
+	if subscription.Customer == nil || subscription.Customer.ID == "" {
+		// TODO: throw an error
+	}
+	err = subscription.Values(&values)
+	if err != nil {
+		return nil, err
+	}
+	if couponID != "" {
+		values.Set("coupon", couponID)
 	}
 	if prorate != true {
 		values.Set("prorate", "false")
 	}
-	if token != "" {
-		values.Set("card", token)
-	} else {
-		if number != "" {
-			values.Set("card[number]", number)
-		}
-		if exp_month != "" {
-			values.Set("card[exp_month]", exp_month)
-		}
-		if exp_year != "" {
-			values.Set("card[exp_year]", exp_year)
-		}
-		if cvc != "" {
-			values.Set("card[cvc]", cvc)
-		}
-		if name != "" {
-			values.Set("card[name]", name)
-		}
-		if address1 != "" {
-			values.Set("card[address_line1]", address1)
-		}
-		if address2 != "" {
-			values.Set("card[address_line2]", address2)
-		}
-		if zip != "" {
-			values.Set("card[address_zip]", zip)
-		}
-		if state != "" {
-			values.Set("card[address_state]", state)
-		}
-		if country != "" {
-			values.Set("card[address_country]", country)
-		}
+	if chargeable != nil {
+		chargeable.ChargeValues(&values)
 	}
 	data := values.Encode()
-	r, err := stripe.request("POST", "customers/"+customer+"/subscription", data)
+	r, err := stripe.request("POST", "customers/"+subscription.Customer.ID+"/subscription", data)
 	if err != nil {
 		return nil, err
 	}
 	err = json.Unmarshal(r, &resp)
-        if err != nil {
-                return nil, err
-        }
-        if resp.Error != nil {
-                // TODO: Throw an error
-        }
+	if err != nil {
+		return nil, err
+	}
+	if resp.Error != nil {
+		// TODO: Throw an error
+	}
 	return
 }
 
-func (stripe *Stripe) Unsubscribe(customer string) (resp *Subscription, err error) {
-	return stripe.RawUnsubscribe(customer, false)
-}
-
-func (stripe *Stripe) RawUnsubscribe(customer string, at_period_end bool) (resp *Subscription, err error) {
+// Unsubscribe cancels the subscription of the customer whose ID matches customerID.
+//
+// If at_period_end is true, the subscription will remain active until the end of the period, at which point
+// it will be cancelled and not renewed. Otherwise, the subscription will be cancelled immediately.
+//
+// Any pending invoice items will still be charged for at the end of the period unless they are manually deleted.
+func (stripe *Stripe) Unsubscribe(customerID string, at_period_end bool) (resp *Subscription, err error) {
 	values := make(url.Values)
 	if at_period_end {
 		values.Set("at_period_end", "true")
@@ -113,16 +97,16 @@ func (stripe *Stripe) RawUnsubscribe(customer string, at_period_end bool) (resp 
 	if params != "" {
 		params = "?" + params
 	}
-	r, err := stripe.request("DELETE", "customers/"+customer+"/subscription"+params, "")
+	r, err := stripe.request("DELETE", "customers/"+customerID+"/subscription"+params, "")
 	if err != nil {
 		return nil, err
 	}
 	err = json.Unmarshal(r, &resp)
-        if err != nil {
-                return nil, err
-        }
-        if resp.Error != nil {
-                // TODO: Throw an error
-        }
+	if err != nil {
+		return nil, err
+	}
+	if resp.Error != nil {
+		// TODO: Throw an error
+	}
 	return
 }

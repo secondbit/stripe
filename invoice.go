@@ -27,12 +27,12 @@ func (stripe *Stripe) GetInvoice(id string) (resp *Invoice, err error) {
 		return nil, err
 	}
 	err = json.Unmarshal(r, &resp)
-        if err != nil {
-                return nil, err
-        }
-        if resp.Error != nil {
-                // TODO: Throw an error
-        }
+	if err != nil {
+		return nil, err
+	}
+	if resp.Error != nil {
+		// TODO: Throw an error
+	}
 	return
 }
 
@@ -45,12 +45,12 @@ func (stripe *Stripe) GetNextInvoice(customer string) (resp *Invoice, err error)
 		return nil, err
 	}
 	err = json.Unmarshal(r, &resp)
-        if err != nil {
-                return nil, err
-        }
-        if resp.Error != nil {
-                // TODO: Throw an error
-        }
+	if err != nil {
+		return nil, err
+	}
+	if resp.Error != nil {
+		// TODO: Throw an error
+	}
 	return
 }
 
@@ -136,12 +136,12 @@ func (stripe *Stripe) RawCreateInvoiceItem(customer, invoice string, amount int,
 		return nil, err
 	}
 	err = json.Unmarshal(r, &resp)
-        if err != nil {
-                return nil, err
-        }
-        if resp.Error != nil {
-                // TODO: Throw an error
-        }
+	if err != nil {
+		return nil, err
+	}
+	if resp.Error != nil {
+		// TODO: Throw an error
+	}
 	return
 }
 
@@ -151,12 +151,12 @@ func (stripe *Stripe) GetInvoiceItem(id string) (resp *InvoiceItem, err error) {
 		return nil, err
 	}
 	err = json.Unmarshal(r, &resp)
-        if err != nil {
-                return nil, err
-        }
-        if resp.Error != nil {
-                // TODO: Throw an error
-        }
+	if err != nil {
+		return nil, err
+	}
+	if resp.Error != nil {
+		// TODO: Throw an error
+	}
 	return
 }
 
@@ -174,12 +174,12 @@ func (stripe *Stripe) UpdateInvoiceItem(id string, amount int, description strin
 		return nil, err
 	}
 	err = json.Unmarshal(r, &resp)
-        if err != nil {
-                return nil, err
-        }
-        if resp.Error != nil {
-                // TODO: Throw an error
-        }
+	if err != nil {
+		return nil, err
+	}
+	if resp.Error != nil {
+		// TODO: Throw an error
+	}
 	return
 }
 
@@ -194,9 +194,9 @@ func (stripe *Stripe) DeleteInvoiceItem(id string) (success bool, err error) {
 		Error   *RawError "error"
 	}
 	err = json.Unmarshal(r, &raw)
-        if err != nil {
-                return false, err
-        }
+	if err != nil {
+		return false, err
+	}
 	if raw.Error != nil {
 		// TODO: throw an error
 	}

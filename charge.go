@@ -2,92 +2,47 @@ package stripe
 
 import (
 	"encoding/json"
+	"errors"
 	"net/url"
 	"strconv"
-        "errors"
 )
 
+// Chargeable is an interface to expose items that can be charged.
+// The Stripe API uses credit cards, tokens, and customers interchangeably for most operations
+// dealing with money; rather than writing three versions of all these operations, Chargeable 
+// allows a single version to work for any of the types that satisfy it.
+type Chargeable interface {
+	ChargeValues(values *url.Values) error
+}
+
 type Charge struct {
-	Amount   int    "amount"
-	Currency string "currency"
-	Card     struct {
-		Type         string "type"
-		ExpYear      int    "exp_year"
-		Country      string "country"
-		LastFour     string "last4"
-		Object       string "object"
-		ExpMonth     int    "exp_month"
-		CVCCheck     string "cvc_check"
-		AddressCheck string "address_line1_check"
-		ZipCheck     string "address_zip_check"
-	}
-	Customer    string
-	Description string    "description"
-	Created     int       "created"
-	Fee         int       "fee"
-	ID          string    "id"
-	LiveMode    bool      "livemode"
-	Object      string    "object"
-	Paid        bool      "paid"
-	Refunded    bool      "refunded"
-	Error       *RawError "error"
+	Amount      int       `json:"amount"`
+	Currency    string    `json:"currency"`
+	Card        *Card     `json:"card"`
+	Customer    string    `json:"customer"` // The Customer's ID
+	Description string    `json:"description"`
+	Created     int       `json:"created"`
+	Fee         int       `json:"fee"`
+	ID          string    `json:"id"`
+	LiveMode    bool      `json:"livemode"`
+	Object      string    `json:"object"` // Should always be "charge"
+	Paid        bool      `json:"paid"`
+	Refunded    bool      `json:"refunded"`
+	Error       *RawError `json:"error"`
 }
 
-func (stripe *Stripe) CreateCharge(amount int, currency string) (resp *Charge, err error) {
-	return stripe.RawCreateCharge(amount, currency, "", "", "", "", "", "", "", "", "", "", "", "", "")
-}
-
-func (stripe *Stripe) ChargeCustomer(amount int, currency, customer string) (resp *Charge, err error) {
-	return stripe.RawCreateCharge(amount, currency, customer, "", "", "", "", "", "", "", "", "", "", "", "")
-}
-
-func (stripe *Stripe) ChargeCustomerWithDescription(amount int, currency, customer, description string) (resp *Charge, err error) {
-	return stripe.RawCreateCharge(amount, currency, customer, description, "", "", "", "", "", "", "", "", "", "", "")
-}
-
-func (stripe *Stripe) RawCreateCharge(amount int, currency, customer, description, token, number, exp_month, exp_year, cvc, name, address1, address2, zip, state, country string) (resp *Charge, err error) {
+// CreateCharge submits a charge object to the Stripe servers, at which point Stripe will charge the card.
+// Description is optional.
+func (stripe *Stripe) CreateCharge(chargeable Chargeable, amount int, currency, description string) (resp *Charge, err error) {
 	values := make(url.Values)
 	values.Set("amount", strconv.Itoa(amount))
 	values.Set("currency", currency)
-	if customer != "" {
-		values.Set("customer", customer)
-	}
 	if description != "" {
 		values.Set("description", description)
 	}
-	if token != "" {
-		values.Set("card", token)
-	} else {
-		if number != "" {
-			values.Set("card[number]", number)
-		}
-		if exp_month != "" {
-			values.Set("card[exp_month]", exp_month)
-		}
-		if exp_year != "" {
-			values.Set("card[exp_year]", exp_year)
-		}
-		if cvc != "" {
-			values.Set("card[cvc]", cvc)
-		}
-		if name != "" {
-			values.Set("card[name]", name)
-		}
-		if address1 != "" {
-			values.Set("card[address_line1]", address1)
-		}
-		if address2 != "" {
-			values.Set("card[address_line2]", address2)
-		}
-		if zip != "" {
-			values.Set("card[address_zip]", zip)
-		}
-		if state != "" {
-			values.Set("card[address_state]", state)
-		}
-		if country != "" {
-			values.Set("card[address_country]", country)
-		}
+	err = chargeable.ChargeValues(&values)
+	if err != nil {
+		return nil, err
 	}
 	data := values.Encode()
 	r, err := stripe.request("POST", "charges", data)
@@ -95,15 +50,16 @@ func (stripe *Stripe) RawCreateCharge(amount int, currency, customer, descriptio
 		return nil, err
 	}
 	err = json.Unmarshal(r, &resp)
-        if err != nil {
-                return nil, err
-        }
-        if resp.Error != nil {
-                // TODO: Throw an error
-        }
+	if err != nil {
+		return nil, err
+	}
+	if resp.Error != nil {
+		// TODO: Throw an error
+	}
 	return
 }
 
+// GetCharge retrieves the details of a charge that has previously been created.
 func (stripe *Stripe) GetCharge(id string) (resp *Charge, err error) {
 	if id == "" {
 		return nil, errors.New("No ID set.")
@@ -113,15 +69,17 @@ func (stripe *Stripe) GetCharge(id string) (resp *Charge, err error) {
 		return nil, err
 	}
 	err = json.Unmarshal(r, &resp)
-        if err != nil {
-                return nil, err
-        }
-        if resp.Error != nil {
-                // TODO: Throw an error
-        }
+	if err != nil {
+		return nil, err
+	}
+	if resp.Error != nil {
+		// TODO: Throw an error
+	}
 	return resp, err
 }
 
+// RefundCharge refunds all or part of a charge. To refund all of a charge, pass -1
+// as the amount.
 func (stripe *Stripe) RefundCharge(id string, amount int) (resp *Charge, err error) {
 	var body string
 	if amount >= 0 {
@@ -134,24 +92,26 @@ func (stripe *Stripe) RefundCharge(id string, amount int) (resp *Charge, err err
 		return nil, err
 	}
 	err = json.Unmarshal(r, &resp)
-        if err != nil {
-                return nil, err
-        }
-        if resp.Error != nil {
-                // TODO: Throw an error
-        }
+	if err != nil {
+		return nil, err
+	}
+	if resp.Error != nil {
+		// TODO: Throw an error
+	}
 	return
 }
 
-func (stripe *Stripe) ListCharges() (resp []*Charge, err error) {
-	return stripe.QueryCharges(-1, -1, "")
-}
-
-func (stripe *Stripe) ListChargesByCustomer(customer string) (resp []*Charge, err error) {
-	return stripe.QueryCharges(-1, -1, customer)
-}
-
-func (stripe *Stripe) QueryCharges(count, offset int, customer string) (resp []*Charge, err error) {
+// ListCharges queries the server for information about past charges.
+//
+// All the arguments are optional.
+//
+// Pass -1 to count to use the Stripe default (10). Count determines the number of charges to return. The maximum is 100.
+// 
+// Pass -1 to offset to use the Stripe default (0). Offset determines the number of recent charges to skip.
+// 
+// Pass anything but an empty string to customer to show only that customer's charges.
+//
+func (stripe *Stripe) ListCharges(count, offset int, customer string) (resp []*Charge, err error) {
 	values := make(url.Values)
 	if count >= 0 {
 		values.Set("count", strconv.Itoa(count))
@@ -180,7 +140,7 @@ func (stripe *Stripe) QueryCharges(count, offset int, customer string) (resp []*
 		return nil, err
 	}
 	if raw.Error != nil {
-                //TODO: Throw an error
+		//TODO: Throw an error
 	}
 	resp = raw.Data
 	return

@@ -1,8 +1,8 @@
 package stripe
 
 import (
-        "testing"
-        "io/ioutil"
+	"io/ioutil"
+	"testing"
 )
 
 //TODO: TestGetCharge
@@ -10,15 +10,15 @@ import (
 //TODO: TestRefund
 
 func TestListCharges(t *testing.T) {
-        key, err := ioutil.ReadFile("key")
-        if err != nil {
-                t.Fatalf("err = %v, want %v", err, nil)
-        }
-        t.Logf("key = %v", string(key))
-        API := New(string(key))
-        t.Logf("API.AuthKey = '%v'", API.AuthKey)
-        _, err = API.ListCharges()
-        if err != nil {
-                t.Fatalf("err = %v, want %v", err, nil)
-        }
+	key, err := ioutil.ReadFile("key")
+	if err != nil {
+		t.Fatalf("err = %v, want %v", err, nil)
+	}
+	t.Logf("key = %v", string(key))
+	API := New(string(key))
+	t.Logf("API.AuthKey = '%v'", API.AuthKey)
+	_, err = API.ListCharges()
+	if err != nil {
+		t.Fatalf("err = %v, want %v", err, nil)
+	}
 }

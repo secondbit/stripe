@@ -11,12 +11,12 @@ type Event struct {
 	Data struct {
 		Object interface{} "object"
 	}
-	PendingWebhooks int    "pending_webhooks"
-	LiveMode        bool   "livemode"
-	Created         int    "created"
-	ID              string "id"
-	Object          string "object"
-        Error           *RawError "error"
+	PendingWebhooks int       "pending_webhooks"
+	LiveMode        bool      "livemode"
+	Created         int       "created"
+	ID              string    "id"
+	Object          string    "object"
+	Error           *RawError "error"
 }
 
 func (stripe *Stripe) GetEvent(id string) (resp *Event, err error) {
@@ -25,12 +25,12 @@ func (stripe *Stripe) GetEvent(id string) (resp *Event, err error) {
 		return nil, err
 	}
 	err = json.Unmarshal(r, &resp)
-        if err != nil {
-                return nil, err
-        }
-        if resp.Error != nil {
-                //TODO: Throw an error
-        }
+	if err != nil {
+		return nil, err
+	}
+	if resp.Error != nil {
+		//TODO: Throw an error
+	}
 	return
 }
 
