@@ -25,7 +25,7 @@ func (coupon *Coupon) Values(values *url.Values) error {
 	if coupon == nil {
 		// TODO: throw an error
 	}
-	if coupon.PercentOff == nil {
+	if coupon.PercentOff < 1 {
 		// TODO: throw an error
 	} else {
 		values.Set("percent_off", strconv.Itoa(coupon.PercentOff))
@@ -42,7 +42,7 @@ func (coupon *Coupon) Values(values *url.Values) error {
 			values.Set("duration_in_months", strconv.Itoa(coupon.DurationInMonths))
 		}
 	}
-	if coupon.MaxRedemptions != "" {
+        if coupon.MaxRedemptions > 0 {
 		values.Set("max_redemptions", strconv.Itoa(coupon.MaxRedemptions))
 	}
 	if coupon.RedeemBy != 0 {

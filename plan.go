@@ -7,30 +7,55 @@ import (
 )
 
 type Plan struct {
-	Name      string    "name"
-	Object    string    "object"
-	ID        string    "id"
-	Interval  string    "interval"
-	Currency  string    "currency"
-	Amount    int       "amount"
-	TrialDays int       "trial_period_days"
-	Error     *RawError "error"
+        Name      string    `json:"name"`
+        Object    string    `json:"object"`
+        ID        string    `json:"id"`
+        Interval  string    `json:"interval"`
+        Currency  string    `json:"currency"`
+        Amount    int       `json:"amount"`
+        TrialDays int       `json:"trial_period_days"`
+        Error     *RawError `json:"error"`
 }
 
-func (stripe *Stripe) CreatePlan(id, name, interval, currency string, amount int) (resp *Plan, err error) {
-	return stripe.CreatePlanWithTrial(id, name, interval, currency, amount, -1)
+func (plan *Plan) Values(values *url.Values) error {
+        if plan == nil {
+                // TODO: Throw error
+        }
+        if plan.ID == "" {
+                // TODO: Throw error
+        }
+        if plan.Name == "" {
+                // TODO: Throw error
+        }
+        if plan.Amount <= 0 {
+                // TODO: Throw error
+        }
+        if plan.Currency != "USD" {
+                // TODO: Throw error
+        }
+        if plan.Interval != "month" && plan.Interval != "year" {
+                // TODO: Throw error
+        }
+        if plan.TrialDays > 0 {
+                values.Set("trial_period_days", strconv.Itoa(plan.TrialDays))
+        }
+        values.Set("id", plan.ID)
+        values.Set("amount", strconv.Itoa(plan.Amount))
+        values.Set("currency", plan.Currency)
+        values.Set("interval", plan.Interval)
+        values.Set("name", plan.Name)
+        return nil
 }
 
-func (stripe *Stripe) CreatePlanWithTrial(id, name, interval, currency string, amount, trial int) (resp *Plan, err error) {
+func (stripe *Stripe) CreatePlan(plan *Plan) (resp *Plan, err error) {
 	values := make(url.Values)
-	values.Set("id", id)
-	values.Set("name", name)
-	values.Set("interval", interval)
-	values.Set("currency", currency)
-	values.Set("amount", strconv.Itoa(amount))
-	if trial >= 0 {
-		values.Set("trial_period_days", strconv.Itoa(trial))
-	}
+        if plan == nil {
+                // TODO: Throw error
+        }
+        err = plan.Values(&values)
+        if err != nil {
+                return nil, err
+        }
 	params := values.Encode()
 	r, err := stripe.request("POST", "plans", params)
 	if err != nil {
@@ -99,11 +124,7 @@ func (stripe *Stripe) DeletePlan(id string) (success bool, err error) {
 	return raw.Success, err
 }
 
-func (stripe *Stripe) ListPlans() (resp []*Plan, err error) {
-	return stripe.QueryPlans(-1, -1)
-}
-
-func (stripe *Stripe) QueryPlans(count, offset int) (resp []*Plan, err error) {
+func (stripe *Stripe) ListPlans(count, offset int) (resp []*Plan, err error) {
 	values := make(url.Values)
 	if count >= 0 {
 		values.Set("count", strconv.Itoa(count))

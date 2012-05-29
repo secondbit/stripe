@@ -7,18 +7,40 @@ import (
 )
 
 type Invoice struct {
-	ID                 string "id"
-	Subtotal           int    "subtotal"
-	Total              int    "total"
-	Created            int    "created"
-	NextPaymentAttempt string "next_payment_attempt"
+        ID                 string  `json:"id"`
+        LiveMode           bool    `json:"livemode"`
+        AmountDue          int     `json:"amount_due"`
+        AttemptCount       int     `json:"attempt_count"`
+        Attempted          bool    `json:"attempted"`
+        Closed             bool    `json:"closed"`
+        CustomerID         string  `json:"customer"`
+        Date               int64   `json:"date"`
+        Paid               bool    `json:"paid"`
+        PeriodEnd          int64   `json:"period_end"`
+        PeriodStart        int64   `json:"period_start"`
+        StartingBalance    int     `json:"starting_balance"`
+        Subtotal           int     `json:"subtotal"`
+        Total              int     `json:"total"`
+        ChargeID           *string `json:"charge"`
+        Discount           *Discount `json:"discount"`
+        EndingBalance      *int    `json:"ending_balance"`
+        NextPaymentAttempt *int    `json:"next_payment_attempt"`
 	Lines              struct {
-		InvoiceItems  []*InvoiceItem "invoiceitems"
-		Subscriptions []*InvoiceItem "subscriptions" // TODO: Is this right?
-		Prorated      []*InvoiceItem "prorated"      // TODO: Is this right?
+                InvoiceItems  []*InvoiceItem `json:"invoiceitems"`
+                Subscriptions []*SubscriptionItem `json:"subscriptions"`
+                Prorated      []*InvoiceItem `json:"prorations"`
 	}
-	Object string    "object"
-	Error  *RawError "error"
+        Object string    `json:"object"`
+        Error  *RawError `json:"error"`
+}
+
+type SubscriptionItem struct {
+        Amount             int     `json:"amount"`
+        Period             struct {
+                Start      int64   `json:"start"`
+                End        int64   `json:"end"`
+        }                          `json:"period"`
+        Plan               *Plan   `json:"plan"`
 }
 
 func (stripe *Stripe) GetInvoice(id string) (resp *Invoice, err error) {
@@ -54,15 +76,7 @@ func (stripe *Stripe) GetNextInvoice(customer string) (resp *Invoice, err error)
 	return
 }
 
-func (stripe *Stripe) ListInvoices() (resp []*Invoice, err error) {
-	return stripe.QueryInvoices(-1, -1, "")
-}
-
-func (stripe *Stripe) ListInvoicesByCustomer(customer string) (resp []*Invoice, err error) {
-	return stripe.QueryInvoices(-1, -1, customer)
-}
-
-func (stripe *Stripe) QueryInvoices(count, offset int, customer string) (resp []*Invoice, err error) {
+func (stripe *Stripe) ListInvoices(count, offset int, customer string) (resp []*Invoice, err error) {
 	values := make(url.Values)
 	if count >= 0 {
 		values.Set("count", strconv.Itoa(count))
@@ -98,38 +112,49 @@ func (stripe *Stripe) QueryInvoices(count, offset int, customer string) (resp []
 }
 
 type InvoiceItem struct {
-	ID          string    "id"
-	Date        int       "date"
-	Description string    "description"
-	Currency    string    "currency"
-	Amount      int       "amount"
-	Object      int       "object"
-	Error       *RawError "error"
+        ID          string    `json:"id"`
+        LiveMode    bool      `json:"livemode"`
+        Date        int64     `json:"date"`
+        Description *string   `json:"description"`
+        Currency    string    `json:"currency"`
+        Amount      int       `json:"amount"`
+        CustomerID  string    `json:"customer"`
+        InvoiceID   *string   `json:"invoice"`
+        Object      int       `json:"object"`
+        Error       *RawError `json:"error"`
 }
 
-func (stripe *Stripe) CreateInvoiceItem(customer string, amount int, currency string) (resp *InvoiceItem, err error) {
-	return stripe.RawCreateInvoiceItem(customer, "", amount, currency, "")
+func (item *InvoiceItem) Values(values *url.Values) error {
+        if item == nil {
+                //TODO: Throw error
+        }
+        if item.CustomerID == "" {
+                // TODO: Throw error
+        }
+        if item.Amount == 0 {
+                // TODO: Throw error
+        }
+        if item.Currency != "USD" {
+                // TODO: Throw error
+        }
+        if item.InvoiceID != nil {
+                values.Set("invoice", *item.InvoiceID)
+        }
+        if item.Description != nil {
+                values.Set("desription", *item.Description)
+        }
+        values.Set("customer", item.CustomerID)
+        values.Set("amount", strconv.Itoa(item.Amount))
+        values.Set("currency", item.Currency)
+        return nil
 }
 
-func (stripe *Stripe) CreateInvoiceItemOnInvoice(customer, invoice string, amount int, currency string) (resp *InvoiceItem, err error) {
-	return stripe.RawCreateInvoiceItem(customer, invoice, amount, currency, "")
-}
-
-func (stripe *Stripe) CreateInvoiceItemWithDescription(customer string, amount int, currency, description string) (resp *InvoiceItem, err error) {
-	return stripe.RawCreateInvoiceItem(customer, "", amount, currency, description)
-}
-
-func (stripe *Stripe) RawCreateInvoiceItem(customer, invoice string, amount int, currency, description string) (resp *InvoiceItem, err error) {
-	values := make(url.Values)
-	values.Set("customer", customer)
-	values.Set("amount", strconv.Itoa(amount))
-	values.Set("currency", currency)
-	if invoice != "" {
-		values.Set("invoice", invoice)
-	}
-	if description != "" {
-		values.Set("description", description)
-	}
+func (stripe *Stripe) CreateInvoiceItem(item *InvoiceItem) (resp *InvoiceItem, err error) {
+        values := make(url.Values)
+        err = item.Values(&values)
+        if err != nil {
+                return nil, err
+        }
 	data := values.Encode()
 	r, err := stripe.request("POST", "invoiceitems", data)
 	if err != nil {
@@ -203,15 +228,7 @@ func (stripe *Stripe) DeleteInvoiceItem(id string) (success bool, err error) {
 	return raw.Success, err
 }
 
-func (stripe *Stripe) ListInvoiceItems() (resp []*InvoiceItem, err error) {
-	return stripe.QueryInvoiceItems(-1, -1, "")
-}
-
-func (stripe *Stripe) ListInvoiceItemsByCustomer(customer string) (resp []*InvoiceItem, err error) {
-	return stripe.QueryInvoiceItems(-1, -1, customer)
-}
-
-func (stripe *Stripe) QueryInvoiceItems(count, offset int, customer string) (resp []*InvoiceItem, err error) {
+func (stripe *Stripe) ListInvoiceItems(count, offset int, customer string) (resp []*InvoiceItem, err error) {
 	values := make(url.Values)
 	if count >= 0 {
 		values.Set("count", strconv.Itoa(count))
@@ -231,9 +248,9 @@ func (stripe *Stripe) QueryInvoiceItems(count, offset int, customer string) (res
 		return nil, err
 	}
 	var raw struct {
-		Count int            "count"
-		Data  []*InvoiceItem "data"
-		Error *RawError      "error"
+                Count int            `json:"count"`
+                Data  []*InvoiceItem `json:"data"`
+                Error *RawError      `json:"error"`
 	}
 	err = json.Unmarshal(r, &raw)
 	if err != nil {

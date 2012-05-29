@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net/url"
 	"strconv"
-	"time"
 )
 
 // Customer represents a customer, according to the Stripe API
@@ -64,7 +63,7 @@ func (customer *Customer) Values(values *url.Values) error {
 //
 // If coupon is non-empty, it is used as a Coupon that will be applied to all of customer's recurring charges.
 //
-// If trial_end is not -1, it will be used as the UTC integer timestamp representing thend of the trial period for customer.
+// If trial_end is not -1, it will be used as the UTC integer timestamp representing the end of the trial period for customer.
 //
 // trial_end overrides the plan's default trial period, if not -1.
 func (stripe *Stripe) CreateCustomer(customer *Customer, chargeable Chargeable, plan, coupon string, trial_end int64) (resp *Customer, err error) {
@@ -74,7 +73,7 @@ func (stripe *Stripe) CreateCustomer(customer *Customer, chargeable Chargeable, 
 		return nil, err
 	}
 	if chargeable != nil {
-		err = chargeable.ChargeValues(values)
+		err = chargeable.ChargeValues(&values)
 		if err != nil {
 			return nil, err
 		}

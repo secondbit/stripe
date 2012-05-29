@@ -7,16 +7,16 @@ import (
 )
 
 type Event struct {
-	Type string "type"
+        Type string `json:"type"`
 	Data struct {
-		Object interface{} "object"
+                Object interface{} `json:"object"`
 	}
-	PendingWebhooks int       "pending_webhooks"
-	LiveMode        bool      "livemode"
-	Created         int       "created"
-	ID              string    "id"
-	Object          string    "object"
-	Error           *RawError "error"
+        PendingWebhooks int       `json:"pending_webhooks"`
+        LiveMode        bool      `json:"livemode"`
+        Created         int64       `json:"created"`
+        ID              string    `json:"id"`
+        Object          string    `json:"object"`
+        Error           *RawError `json:"error"`
 }
 
 func (stripe *Stripe) GetEvent(id string) (resp *Event, err error) {
@@ -34,23 +34,7 @@ func (stripe *Stripe) GetEvent(id string) (resp *Event, err error) {
 	return
 }
 
-func (stripe *Stripe) ListEvents() (resp []*Event, err error) {
-	return stripe.QueryEvents("", -1, -1, "", "")
-}
-
-func (stripe *Stripe) ListEventsByType(event_type string) (resp []*Event, err error) {
-	return stripe.QueryEvents(event_type, -1, -1, "", "")
-}
-
-func (stripe *Stripe) ListEventsOnDate(date string) (resp []*Event, err error) {
-	return stripe.QueryEvents("", -1, -1, date, "")
-}
-
-func (stripe *Stripe) ListEventsComparedToDate(comparison, date string) (resp []*Event, err error) {
-	return stripe.QueryEvents("", -1, -1, date, comparison)
-}
-
-func (stripe *Stripe) QueryEvents(event_type string, count, offset int, date, comparison string) (resp []*Event, err error) {
+func (stripe *Stripe) ListEvents(event *Event, count, offset int, comparison string ) (resp []*Event, err error) {
 	values := make(url.Values)
 	if count >= 0 {
 		values.Set("count", strconv.Itoa(count))
@@ -58,14 +42,18 @@ func (stripe *Stripe) QueryEvents(event_type string, count, offset int, date, co
 	if offset >= 0 {
 		values.Set("offset", strconv.Itoa(offset))
 	}
-	if event_type != "" {
-		values.Set("type", event_type)
-	}
-	if date != "" && comparison != "" {
-		values.Set("created["+comparison+"]", date)
-	} else if date != "" {
-		values.Set("created", date)
-	}
+        if event != nil {
+        	if event.Type != "" {
+	        	values.Set("type", event.Type)
+        	}
+	        if event.Created > 0 && comparison != "" {
+                        if comparison != "e" {
+        		        values.Set("created["+comparison+"]", strconv.FormatInt(event.Created, 10))
+                        } else {
+                                values.Set("created", strconv.FormatInt(event.Created, 10))
+                        }
+        	}
+        }
 	params := values.Encode()
 	if params != "" {
 		params = "?" + params

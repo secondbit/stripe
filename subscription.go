@@ -18,7 +18,7 @@ type Subscription struct {
 	TrialStart        int64     `json:"trial_start"`
 	TrialEnd          int64     `json:"trial_end"`
 	Plan              *Plan     `json:"plan"`
-	Customer          string    `json:"customer"` // The Customer's ID
+	CustomerID          string    `json:"customer"` // The Customer's ID
 	Error             *RawError `json:"error"`
 }
 
@@ -38,11 +38,12 @@ func (subscription *Subscription) Values(values *url.Values) error {
 	if subscription.TrialEnd > 0 {
 		values.Set("trial_end", strconv.FormatInt(subscription.TrialEnd, 10))
 	}
+        return nil
 }
 
 // Subscribe updates the customer's plan. The customer will be billed monthly according to the new plan.
 //
-// *subscription is the only required argument. *subscription.Plan.ID and *subscription.Customer.ID must be set.
+// *subscription is the only required argument. *subscription.Plan.ID and *subscription.CustomerID must be set.
 //
 // If couponID is non-empty, it will be used as the ID of a coupon to apply to the customer.
 //
@@ -51,7 +52,7 @@ func (subscription *Subscription) Values(values *url.Values) error {
 // If chargeable is non-nil, it will be attached to the customer. Can be either a token or a credit card.
 func (stripe *Stripe) Subscribe(subscription *Subscription, couponID string, prorate bool, chargeable Chargeable) (resp *Subscription, err error) {
 	values := make(url.Values)
-	if subscription.Customer == nil || subscription.Customer.ID == "" {
+	if subscription.CustomerID == "" {
 		// TODO: throw an error
 	}
 	err = subscription.Values(&values)
@@ -68,7 +69,7 @@ func (stripe *Stripe) Subscribe(subscription *Subscription, couponID string, pro
 		chargeable.ChargeValues(&values)
 	}
 	data := values.Encode()
-	r, err := stripe.request("POST", "customers/"+subscription.Customer.ID+"/subscription", data)
+	r, err := stripe.request("POST", "customers/"+subscription.CustomerID+"/subscription", data)
 	if err != nil {
 		return nil, err
 	}
